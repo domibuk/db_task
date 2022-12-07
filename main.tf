@@ -74,8 +74,8 @@ resource "aws_launch_configuration" "demoproject" {
 #Autoscaling
 resource "aws_autoscaling_group" "demoproject" {
   min_size             = 1
-  max_size             = 2
-  desired_capacity     = 2
+  max_size             = 3
+  desired_capacity     = terraform.workspace == "dev" ? 2 : 3
   launch_configuration = aws_launch_configuration.demoproject.name
   vpc_zone_identifier  = ["subnet-24a5a06c", "subnet-d96257bf"]
 }
