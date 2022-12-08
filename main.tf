@@ -8,13 +8,13 @@ terraform {
 }
 
 provider "aws" {
-  region = "eu-west-1"
+  region = var.region
 }
 
 #Security Groups
 resource "aws_security_group" "demoproject_instance" {
   name   = "demoproject-instance-sg"
-  vpc_id = "vpc-371de54e"
+  vpc_id = var.vpc_id
 
   ingress {
     from_port       = 80
@@ -40,7 +40,7 @@ resource "aws_security_group" "demoproject_instance" {
 
 resource "aws_security_group" "demoproject_lb" {
   name   = "demoproject-lb-sg"
-  vpc_id = "vpc-371de54e"
+  vpc_id = var.vpc_id
 
   ingress {
     from_port   = 80
@@ -60,7 +60,7 @@ resource "aws_security_group" "demoproject_lb" {
 #EC2
 resource "aws_launch_configuration" "demoproject" {
   name_prefix                 = "EC2-asg-"
-  image_id                    = "ami-01cae1550c0adea9c"
+  image_id                    = var.ami
   instance_type               = "t2.micro"
   user_data                   = file("docker.sh")
   security_groups             = [aws_security_group.demoproject_instance.id]
@@ -77,7 +77,7 @@ resource "aws_autoscaling_group" "demoproject" {
   max_size             = 3
   desired_capacity     = terraform.workspace == "dev" ? 2 : 3
   launch_configuration = aws_launch_configuration.demoproject.name
-  vpc_zone_identifier  = ["subnet-24a5a06c", "subnet-d96257bf"]
+  vpc_zone_identifier  = var.subnets
 }
 
 #Application load balancer
@@ -86,7 +86,7 @@ resource "aws_lb" "demoproject" {
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.demoproject_lb.id]
-  subnets            = ["subnet-24a5a06c", "subnet-d96257bf"]
+  subnets            = var.subnets
 }
 
 resource "aws_lb_listener" "demoproject" {
@@ -104,7 +104,7 @@ resource "aws_lb_target_group" "demoproject" {
   name     = "demoproject-tg"
   port     = 80
   protocol = "HTTP"
-  vpc_id   = "vpc-371de54e"
+  vpc_id   = var.vpc_id
 }
 
 resource "aws_autoscaling_attachment" "demoproject" {
